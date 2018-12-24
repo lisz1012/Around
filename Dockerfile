@@ -6,10 +6,10 @@ ENV GCS_BUCKET lisz1012
 ENV ES_URL http://35.230.22.138:9200
 
 # Define working directory
-WORKDIR /go/src/github.com/DDOwzw/Around
+WORKDIR /go/src/github.com/lisz1012/Around
 
 # Add files from your laptop to inside the docker image
-ADD . /go/src/github.com/DDOwzw/Around
+ADD . /go/src/github.com/lisz1012/Around
 
 # Install dependencies
 RUN go get -v \

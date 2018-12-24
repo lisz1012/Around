@@ -13,6 +13,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/olivere/elastic"
 	"github.com/pborman/uuid"
+	"google.golang.org/api/option"
 )
 
 const (
@@ -213,7 +214,7 @@ func readFromES(lat, lon float64, ran string) ([]Post, error) {
 func saveToGCS(r io.Reader, bucketName, objectName string) (*storage.ObjectAttrs, error) {
 	ctx := context.Background()
 	// Creates a client.
-	client, err := storage.NewClient(ctx)
+	client, err := storage.NewClient(ctx, option.WithCredentialsFile("Around-4b46b1235787.json"))
 	if err != nil {
 		return nil, err
 	}
