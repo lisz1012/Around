@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"cloud.google.com/go/bigtable"
 	"cloud.google.com/go/storage"
 	"github.com/olivere/elastic"
 	"github.com/pborman/uuid"
@@ -17,11 +18,13 @@ import (
 )
 
 const (
-	POST_INDEX  = "post"
-	POST_TYPE   = "post"
-	DISTANCE    = "200km"
-	ES_URL      = "http://35.230.22.138:9200"
-	BUCKET_NAME = "lisz1012"
+	POST_INDEX          = "post"
+	POST_TYPE           = "post"
+	DISTANCE            = "200km"
+	ES_URL              = "http://35.230.117.211:9200"
+	BUCKET_NAME         = "post-images-lisz1012"
+	BIGTABLE_PROJECT_ID = "around-227604"
+	BT_INSTANCE         = "around-post"
 )
 
 type Location struct {
@@ -79,6 +82,13 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 
 	p.Url = attrs.MediaLink
 	err = saveToES(p, id)
+	if err != nil {
+		http.Error(w, "Failed to save post to ElasticSearch", http.StatusInternalServerError)
+		fmt.Printf("Failed to save post to ElasticSearch %v.\n", err)
+		return
+	}
+
+	err = saveToBigTable(p, id)
 	if err != nil {
 		http.Error(w, "Failed to save post to ElasticSearch", http.StatusInternalServerError)
 		fmt.Printf("Failed to save post to ElasticSearch %v.\n", err)
@@ -174,6 +184,32 @@ func saveToES(post *Post, id string) error {
 	return nil
 }
 
+// Save a post to BigTable
+func saveToBigTable(p *Post, id string) error {
+	ctx := context.Background()
+	bt_client, err := bigtable.NewClient(ctx, BIGTABLE_PROJECT_ID, BT_INSTANCE, option.WithCredentialsFile("around-b21283be609f.json"))
+	if err != nil {
+		panic(err)
+		return err
+	}
+
+	tbl := bt_client.Open("post")
+	mut := bigtable.NewMutation()
+	t := bigtable.Now()
+	mut.Set("post", "user", t, []byte(p.User))
+	mut.Set("post", "message", t, []byte(p.Message))
+	mut.Set("location", "lat", t, []byte(strconv.FormatFloat(p.Location.Lat, 'f', -1, 64)))
+	mut.Set("location", "lon", t, []byte(strconv.FormatFloat(p.Location.Lon, 'f', -1, 64)))
+
+	err = tbl.Apply(ctx, id, mut)
+	if err != nil {
+		panic(err)
+		return err
+	}
+	fmt.Printf("Post is saved to BigTable: %s\n", p.Message)
+	return nil
+}
+
 func readFromES(lat, lon float64, ran string) ([]Post, error) {
 	client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
 	if err != nil {
@@ -214,7 +250,7 @@ func readFromES(lat, lon float64, ran string) ([]Post, error) {
 func saveToGCS(r io.Reader, bucketName, objectName string) (*storage.ObjectAttrs, error) {
 	ctx := context.Background()
 	// Creates a client.
-	client, err := storage.NewClient(ctx, option.WithCredentialsFile("Around-4b46b1235787.json"))
+	client, err := storage.NewClient(ctx, option.WithCredentialsFile("around-b21283be609f.json"))
 	if err != nil {
 		return nil, err
 	}
