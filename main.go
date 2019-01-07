@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"cloud.google.com/go/bigtable"
+	//"cloud.google.com/go/bigtable"
 	"cloud.google.com/go/storage"
 	"github.com/olivere/elastic"
 	"github.com/pborman/uuid"
@@ -18,13 +18,13 @@ import (
 )
 
 const (
-	POST_INDEX          = "post"
-	POST_TYPE           = "post"
-	DISTANCE            = "200km"
-	ES_URL              = "http://35.230.117.211:9200"
-	BUCKET_NAME         = "post-images-lisz1012"
-	BIGTABLE_PROJECT_ID = "around-227604"
-	BT_INSTANCE         = "around-post"
+	POST_INDEX  = "post"
+	POST_TYPE   = "post"
+	DISTANCE    = "200km"
+	ES_URL      = "http://35.230.117.211:9200"
+	BUCKET_NAME = "post-images-lisz1012"
+	//BIGTABLE_PROJECT_ID = "around-227604"
+	//BT_INSTANCE         = "around-post"
 )
 
 type Location struct {
@@ -88,12 +88,12 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = saveToBigTable(p, id)
+	/*err = saveToBigTable(p, id)
 	if err != nil {
 		http.Error(w, "Failed to save post to ElasticSearch", http.StatusInternalServerError)
 		fmt.Printf("Failed to save post to ElasticSearch %v.\n", err)
 		return
-	}
+	}*/
 
 	fmt.Printf("Saved one post to ElasticSearch: %s", p.Message)
 }
@@ -185,7 +185,7 @@ func saveToES(post *Post, id string) error {
 }
 
 // Save a post to BigTable
-func saveToBigTable(p *Post, id string) error {
+/*func saveToBigTable(p *Post, id string) error {
 	ctx := context.Background()
 	bt_client, err := bigtable.NewClient(ctx, BIGTABLE_PROJECT_ID, BT_INSTANCE, option.WithCredentialsFile("around-b21283be609f.json"))
 	if err != nil {
@@ -208,7 +208,7 @@ func saveToBigTable(p *Post, id string) error {
 	}
 	fmt.Printf("Post is saved to BigTable: %s\n", p.Message)
 	return nil
-}
+}*/
 
 func readFromES(lat, lon float64, ran string) ([]Post, error) {
 	client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
